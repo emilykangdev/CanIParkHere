@@ -1,0 +1,37 @@
+services:
+  # Backend FastAPI service
+  - type: web
+    name: caniparkhere-backend
+    runtime: python3
+    buildCommand: |
+      cd backend
+      python -m venv venv
+      source venv/bin/activate
+      pip install -r requirements.txt
+    startCommand: |
+      cd backend
+      source venv/bin/activate
+      uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false  # Set this manually in Render dashboard
+    healthCheckPath: /health
+    
+  # Frontend Next.js service  
+  - type: web
+    name: caniparkhere-frontend
+    runtime: node
+    buildCommand: |
+      cd my-app
+      npm ci
+      npm run build
+    startCommand: |
+      cd my-app
+      npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://caniparkhere-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://caniparkhere-backend.onrender.com/*

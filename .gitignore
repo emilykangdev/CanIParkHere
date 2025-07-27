@@ -7,3 +7,5 @@ data
 llm_service.py
 parking_parser.py
 .claude
+.DS_Store
+*.pyc
