@@ -1,0 +1,393 @@
+Warning: OpenAI client initialization failed: Client.__init__() got an unexpected keyword argument 'proxies'
+Server will start but image processing will be disabled
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CanIParkHere API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Root",
+        "description": "Health check endpoint.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/check-parking-image": {
+      "post": {
+        "summary": "Check Parking From Image",
+        "description": "Query ChatGPT, get a JSON response, and return a structured ParkingCheckResponse about the parking image.\nFastAPI automatically converts the returned object into JSON.\nThis also saves the JSON into an in-memory dictionary.",
+        "operationId": "check_parking_from_image_check_parking_image_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_check_parking_from_image_check_parking_image_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParkingCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/check-parking-location": {
+      "post": {
+        "summary": "Check Parking Location",
+        "description": "TODO: Dummy endpoint, update later after exploring Seattle Parking CSV.",
+        "operationId": "check_parking_location_check_parking_location_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/followup-question": {
+      "post": {
+        "summary": "Followup Question",
+        "description": "Handle follow-up questions based on the JSON summary\nthat corresponds to a specific session ID from the frontend.",
+        "operationId": "followup_question_followup_question_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowUpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowUpResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "Detailed health check with service status.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_check_parking_from_image_check_parking_image_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          },
+          "datetime_str": {
+            "type": "string",
+            "title": "Datetime Str"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "datetime_str"
+        ],
+        "title": "Body_check_parking_from_image_check_parking_image_post"
+      },
+      "FollowUpRequest": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id",
+            "description": "Session ID from previous parking check"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question",
+            "description": "User's follow-up question"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "question"
+        ],
+        "title": "FollowUpRequest",
+        "description": "Request for follow-up questions about a parking check"
+      },
+      "FollowUpResponse": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer",
+            "description": "Answer to the user's question"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer"
+        ],
+        "title": "FollowUpResponse",
+        "description": "Response to follow-up question"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LocationCheckRequest": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "title": "Latitude",
+            "description": "Latitude coordinate"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude",
+            "description": "Longitude coordinate"
+          },
+          "datetime": {
+            "type": "string",
+            "title": "Datetime",
+            "description": "Date/time for parking check"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude",
+          "datetime"
+        ],
+        "title": "LocationCheckRequest",
+        "description": "Request for location-based parking check"
+      },
+      "LocationCheckResponse": {
+        "properties": {
+          "canPark": {
+            "type": "boolean",
+            "title": "Canpark",
+            "description": "Whether parking is allowed at this location"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Descriptive message about parking rules"
+          },
+          "processing_method": {
+            "type": "string",
+            "title": "Processing Method",
+            "description": "Processing method identifier",
+            "default": "location_api"
+          }
+        },
+        "type": "object",
+        "required": [
+          "canPark",
+          "message"
+        ],
+        "title": "LocationCheckResponse",
+        "description": "Response from location-based parking check"
+      },
+      "ParkingCheckResponse": {
+        "properties": {
+          "messageType": {
+            "type": "string",
+            "title": "Messagetype",
+            "description": "Type of message for frontend routing"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id",
+            "description": "Session ID for follow-up questions"
+          },
+          "isParkingSignFound": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ],
+            "title": "Isparkingsignfound",
+            "description": "Whether a parking sign was detected"
+          },
+          "canPark": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false",
+              "uncertain"
+            ],
+            "title": "Canpark",
+            "description": "Parking permission status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Clear explanation of the parking decision"
+          },
+          "rules": {
+            "type": "string",
+            "title": "Rules",
+            "description": "Full text of parking rules found"
+          },
+          "parsedText": {
+            "type": "string",
+            "title": "Parsedtext",
+            "description": "Raw text extracted from the image"
+          },
+          "advice": {
+            "type": "string",
+            "title": "Advice",
+            "description": "Additional helpful advice"
+          },
+          "processing_method": {
+            "type": "string",
+            "title": "Processing Method",
+            "description": "Method used to process the request"
+          }
+        },
+        "type": "object",
+        "required": [
+          "messageType",
+          "session_id",
+          "isParkingSignFound",
+          "canPark",
+          "reason",
+          "rules",
+          "parsedText",
+          "advice",
+          "processing_method"
+        ],
+        "title": "ParkingCheckResponse",
+        "description": "Response from parking sign analysis"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
