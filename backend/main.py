@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import base64
@@ -33,11 +33,26 @@ except Exception as e:
 # Add CORS middleware for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001", 
+        "https://caniparkhere.dev",
+        "https://caniparkhere.vercel.app"  # Default Vercel domain as backup
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"Incoming request: {request.method} {request.url}")
+    print(f"Origin: {request.headers.get('origin', 'No origin header')}")
+    print(f"User-Agent: {request.headers.get('user-agent', 'No user-agent')}")
+    response = await call_next(request)
+    print(f"Response status: {response.status_code}")
+    return response
 
 image_prompt = """
 You are a helpful assistant that interprets parking signs from images.
