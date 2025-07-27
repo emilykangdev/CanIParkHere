@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Image from 'next/image'
 import { Camera, MapPin, Send, Loader2 } from 'lucide-react'
 import { compressImage, formatFileSize } from '../lib/imageUtils'
 import { apiClient, formatApiError } from '../lib/apiClient'
@@ -292,12 +293,15 @@ const ParkingChatApp = () => {
               {/* General image preview - shows for any message with imageData */}
               {message.data?.imageData && (
                 <div className="mt-2">
-                  <img 
+                  <Image
                     src={message.data.imageData} 
                     alt="Preview" 
+                    width={320}
+                    height={128}
                     className="max-w-full h-32 object-contain rounded border bg-white"
                     onError={(e) => console.error('Image failed to load')}
                     onLoad={() => console.log('Image loaded successfully')}
+                    unoptimized={true}
                   />
                 </div>
               )}
@@ -363,7 +367,7 @@ const ParkingChatApp = () => {
                     )}
 
                   {message.data.reason && (
-                    <div>Here's why: {message.data.reason}</div>
+                    <div>Here&apos;s why: {message.data.reason}</div>
                   )}
 
                   {message.data.rules && (
@@ -456,9 +460,9 @@ const ParkingChatApp = () => {
         />
         
         <div className="text-xs text-gray-500 text-center">
-          Choose "Take Photo" to capture a parking sign or "Use Location" to check local parking rules
+          Choose &quot;Take Photo&quot; to capture a parking sign or &quot;Use Location&quot; to check local parking rules
           {currentSessionId && <br />}
-          {currentSessionId && "Ask follow-up questions about the parking analysis above"}
+          {currentSessionId && 'Ask follow-up questions about the parking analysis above'}
         </div>
       </div>
     </div>
