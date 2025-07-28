@@ -18,14 +18,16 @@ export const MessageType = Object.freeze({
 
 
 const ParkingChatApp = () => {
+  let messageIdCounter = 1
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: 'bot',
-      content: '🅿️ Welcome to CanIParkHere! I can help you check parking rules by analyzing a photo of a parking sign or checking your location.',
-      timestamp: new Date()
+      data: { answer: '🅿️ Welcome to CanIParkHere! I can help you check parking rules by analyzing a photo of a parking sign or checking your location.' },
+      timestamp: null
     }
   ])
+  const [isMounted, setIsMounted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [currentLocation, setCurrentLocation] = useState(null)
   const [locationError, setLocationError] = useState(null)
@@ -42,6 +44,16 @@ const ParkingChatApp = () => {
     scrollToBottom()
   }, [messages])
 
+  // Initialize timestamps after mount (client-only)
+  useEffect(() => {
+    setIsMounted(true)
+    setMessages(prev => prev.map(msg => 
+      msg.timestamp === null 
+        ? { ...msg, timestamp: new Date() }
+        : msg
+    ))
+  }, [])
+
   // No blob URL cleanup needed with base64 approach
 
   // 1. Define message types
@@ -49,7 +61,7 @@ const ParkingChatApp = () => {
   const addMessage = (type, data = null) => {
     console.log('Adding message:', type, data)
     const newMessage = {
-      id: Date.now(),
+      id: ++messageIdCounter,
       type: type,
       data,
       timestamp: new Date()
@@ -386,7 +398,7 @@ const ParkingChatApp = () => {
               )}
               
               <div className="text-xs opacity-60 mt-1">
-                {formatTime(message.timestamp)}
+                {isMounted && message.timestamp ? formatTime(message.timestamp) : '--:--'}
               </div>
             </div>
           </div>
