@@ -23,7 +23,7 @@ export const apiClient = {
     formData.append('file', file);
     formData.append('datetime_str', datetime_str);
     
-    const response = await fetch(`${API_BASE}/check-parking-image`, {
+    const response = await fetch(new URL('/check-parking-image', API_BASE).toString(), {
       method: 'POST',
       body: formData,
     });
@@ -44,7 +44,7 @@ export const apiClient = {
    * @returns {Promise<LocationCheckResponse>} Location-based parking result
    */
   async checkParkingLocation(latitude, longitude, datetime = new Date().toISOString()) {
-    const response = await fetch(`${API_BASE}/check-parking-location`, {
+    const response = await fetch(new URL('/check-parking-location', API_BASE).toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ latitude, longitude, datetime }),
@@ -65,7 +65,7 @@ export const apiClient = {
    * @returns {Promise<FollowUpResponse>} Answer to the question
    */
   async followUpQuestion(session_id, question) {
-    const response = await fetch(`${API_BASE}/followup-question`, {
+    const response = await fetch(new URL('/followup-question', API_BASE).toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id, question }),
@@ -84,7 +84,7 @@ export const apiClient = {
    * @returns {Promise<Object>} Health status
    */
   async healthCheck() {
-    const response = await fetch(`${API_BASE}/`);
+    const response = await fetch(new URL('/', API_BASE).toString());
     
     if (!response.ok) {
       throw new Error(`Health check failed: ${response.status}`);

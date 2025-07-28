@@ -18,10 +18,9 @@ export const MessageType = Object.freeze({
 
 
 const ParkingChatApp = () => {
-  let messageIdCounter = 1
   const [messages, setMessages] = useState([
     {
-      id: 1,
+      id: crypto.randomUUID(),
       type: 'bot',
       data: { answer: '🅿️ Welcome to CanIParkHere! I can help you check parking rules by analyzing a photo of a parking sign or checking your location.' },
       timestamp: null
@@ -61,7 +60,7 @@ const ParkingChatApp = () => {
   const addMessage = (type, data = null) => {
     console.log('Adding message:', type, data)
     const newMessage = {
-      id: ++messageIdCounter,
+      id: crypto.randomUUID(),
       type: type,
       data,
       timestamp: new Date()
@@ -116,6 +115,11 @@ const ParkingChatApp = () => {
     const file = event.target.files?.[0]
     if (!file) return
 
+    console.log('Photo upload started:', file.name, file.size)
+
+    // Reset the file input to allow same file upload again
+    event.target.value = ''
+    
     setIsLoading(true)
     let compressionResult = null
 
@@ -292,7 +296,9 @@ const ParkingChatApp = () => {
 
               {(message.type === 'bot' || message.type === 'error' || message.type === 'followup') && (
                 <div>
-                  {message.data?.answer || 'No response provided'}
+                  {message.type === 'error' && message.data?.isParkingSignFound === 'false' 
+                    ? 'No parking sign found. Can you try to take a picture with a parking sign in it?'
+                    : message.data?.answer || 'No response provided'}
                 </div>
               )}
 
