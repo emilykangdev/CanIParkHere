@@ -31,6 +31,8 @@ const ParkingChatApp = () => {
   const [currentLocation, setCurrentLocation] = useState(null)
   const [locationError, setLocationError] = useState(null)
   const [currentSessionId, setCurrentSessionId] = useState(null)
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
+  const [showAccessDenied, setShowAccessDenied] = useState(false)
   const messagesEndRef = useRef(null)
   const fileInputRef = useRef(null)
   const followUpInputRef = useRef(null)
@@ -51,6 +53,12 @@ const ParkingChatApp = () => {
         ? { ...msg, timestamp: new Date() }
         : msg
     ))
+    
+    // Check if user has accepted terms
+    const termsAccepted = localStorage.getItem('caniparkhere-terms-accepted')
+    if (termsAccepted === 'true') {
+      setHasAcceptedTerms(true)
+    }
   }, [])
 
   // No blob URL cleanup needed with base64 approach
@@ -258,8 +266,80 @@ const ParkingChatApp = () => {
     return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 
+  const handleAcceptTerms = () => {
+    localStorage.setItem('caniparkhere-terms-accepted', 'true')
+    setHasAcceptedTerms(true)
+  }
+
+  const handleDeclineTerms = () => {
+    setShowAccessDenied(true)
+  }
+
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto bg-white shadow-lg">
+      {/* Terms and Disclaimer Modal */}
+      {!hasAcceptedTerms && !showAccessDenied && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="text-center mb-4">
+                <div className="text-4xl mb-2">🅿️</div>
+                <h2 className="text-xl font-bold text-gray-800">Terms & Disclaimer</h2>
+              </div>
+              
+              <div className="text-sm text-gray-700 leading-relaxed mb-6">
+                <p className="font-semibold mb-3">Disclaimer:</p>
+                <p>
+                  CanIParkHere uses AI to help interpret parking signs but may be inaccurate. 
+                  This is not legal advice. You're responsible for following local parking rules. 
+                  Use the app at your own risk—we aren't liable for tickets or fines.
+                </p>
+                <p className="mt-3">
+                  By using this app, you agree to these terms.
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDeclineTerms}
+                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg py-3 px-4 font-medium transition-colors"
+                >
+                  Disagree
+                </button>
+                <button
+                  onClick={handleAcceptTerms}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-3 px-4 font-medium transition-colors"
+                >
+                  I Agree
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Access Denied Screen */}
+      {showAccessDenied && (
+        <div className="fixed inset-0 bg-gray-100 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 text-center shadow-lg">
+            <div className="text-6xl mb-4">🚫</div>
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Access Denied</h2>
+            <p className="text-gray-600 mb-6">
+              You must agree to the terms and conditions to use CanIParkHere.
+            </p>
+            <button
+              onClick={() => {
+                setShowAccessDenied(false)
+                setHasAcceptedTerms(false)
+              }}
+              className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-2 px-6 font-medium transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-blue-600 text-white p-4 flex items-center gap-2">
         <div className="text-2xl">🅿️</div>
