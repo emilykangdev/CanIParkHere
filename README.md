@@ -1,5 +1,7 @@
 # CanIParkHere
 
+Status update: I added a popup disclaimer for potential users to agree to before they use this app. I've decided to move onto other projects. Although there's many parking data sources, cleaning and combining them to give actually useful parking suggestions would be a large data engineering effort. 
+
 ## Why I Built This
 
 Got too many parking tickets in Seattle. Tired of squinting at confusing parking signs and getting $60 surprises on my windshield. 
