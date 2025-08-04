@@ -1,3 +1,4 @@
+from geo.spatial_query import get_parking_category, get_rpz_zone, get_signs_nearby
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -249,6 +250,16 @@ async def check_parking_location(data: LocationCheckRequest) -> LocationCheckRes
     """
     # Here, your logic to check parking rules by lat/lng + datetime
     # For prototype, return a dummy response:
+    lat, lon = 47.669253, -122.311622
+    print(f"Checking parking at lat: {lat}, lon: {lon}")
+    rpz_zone = get_rpz_zone(lat, lon)
+    parking_category = get_parking_category(lat, lon)
+    signs_nearby = get_signs_nearby(lat, lon, radius_meters=30)
+
+    print(f"RPZ Zone: {rpz_zone}")
+    print(f"Parking Category: {parking_category}")
+    print(f"Nearby Signs: {signs_nearby}")
+
     return LocationCheckResponse(
         canPark=True,
         message=f"At location ({data.latitude:.6f}, {data.longitude:.6f}), parking is allowed from 8AM to 6PM on weekdays.",

@@ -41,19 +41,28 @@ export const apiClient = {
    * @param {number} latitude - Latitude coordinate
    * @param {number} longitude - Longitude coordinate  
    * @param {string} datetime - Date/time for parking check
+   * @description Sends body with format {<LocationCheckRequest>} to the API
    * @returns {Promise<LocationCheckResponse>} Location-based parking result
    */
   async checkParkingLocation(latitude, longitude, datetime = new Date().toISOString()) {
+
+    console.log('Inside checkparkingLocation function');
     const response = await fetch(new URL('/check-parking-location', API_BASE).toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ latitude, longitude, datetime }),
+      body: JSON.stringify({ 
+        latitude: parseFloat(latitude), 
+        longitude: parseFloat(longitude), 
+        datetime 
+      }),
     });
     
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`API Error ${response.status}: ${errorText}`);
     }
+
+    console.log('Response from checkParkingLocation:', response);
     
     return response.json(); // Returns LocationCheckResponse type
   },

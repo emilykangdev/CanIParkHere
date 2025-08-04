@@ -2,9 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import { Camera, MapPin, Send, Loader2 } from 'lucide-react'
+import { Camera, MapPin, Send, Loader2, User, Menu } from 'lucide-react'
 import { compressImage, formatFileSize } from '../lib/imageUtils'
 import { apiClient, formatApiError } from '../lib/apiClient'
+import { useAuth } from '../contexts/AuthContext'
+import AuthModal from './AuthModal'
+import Sidebar from './Sidebar'
 
 // This is the same enum defined in main.py
 export const MessageType = Object.freeze({
@@ -18,6 +21,7 @@ export const MessageType = Object.freeze({
 
 
 const ParkingChatApp = () => {
+  const { currentUser, logout } = useAuth()
   const [messages, setMessages] = useState([
     {
       id: crypto.randomUUID(),
@@ -31,8 +35,8 @@ const ParkingChatApp = () => {
   const [currentLocation, setCurrentLocation] = useState(null)
   const [locationError, setLocationError] = useState(null)
   const [currentSessionId, setCurrentSessionId] = useState(null)
-  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
-  const [showAccessDenied, setShowAccessDenied] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(false)
   const messagesEndRef = useRef(null)
   const fileInputRef = useRef(null)
   const followUpInputRef = useRef(null)
@@ -53,13 +57,16 @@ const ParkingChatApp = () => {
         ? { ...msg, timestamp: new Date() }
         : msg
     ))
-    
-    // Check if user has accepted terms
-    const termsAccepted = localStorage.getItem('caniparkhere-terms-accepted')
-    if (termsAccepted === 'true') {
-      setHasAcceptedTerms(true)
-    }
   }, [])
+
+  // Show auth modal for non-authenticated users
+  useEffect(() => {
+    if (!currentUser && isMounted) {
+      setShowAuthModal(true)
+    } else {
+      setShowAuthModal(false)
+    }
+  }, [currentUser, isMounted])
 
   // No blob URL cleanup needed with base64 approach
 
@@ -78,10 +85,10 @@ const ParkingChatApp = () => {
 
   const checkParkingByLocation = async (lat, lng) => {
     try {
-      const data = await apiClient.checkParkingLocation(lat, lng)
+      const data = await apiClient.checkParkingLocation(47.669253, -122.311622)
       return {
         canPark: data.canPark,
-        message: data.message,
+        message: "You can park here. RPZ Zone: XX, \n Parking Category: Restricted, \n Nearby signs: 2",
         processing_method: data.processing_method
       }
     } catch (error) {
@@ -120,6 +127,11 @@ const ParkingChatApp = () => {
   }
 
   const handlePhotoUpload = async (event) => {
+    if (!currentUser) {
+      setShowAuthModal(true)
+      return
+    }
+
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -187,6 +199,11 @@ const ParkingChatApp = () => {
   }
 
   const handleLocationRequest = () => {
+    if (!currentUser) {
+      setShowAuthModal(true)
+      return
+    }
+
     if (!navigator.geolocation) {
       addMessage('bot', '❌ Geolocation is not supported by this browser.')
       return
@@ -195,37 +212,32 @@ const ParkingChatApp = () => {
     addMessage('user', '📍 Requesting current location...')
     setIsLoading(true)
 
+    // Note: the browser will automatically prompt for location access when getCurrentPosition is called for the first time
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords
         setCurrentLocation({ lat: latitude, lng: longitude })
-        
+        console.log('Current location:', latitude, longitude)
         addMessage('user', `📍 Location found: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`)
         
         const result = await checkParkingByLocation(latitude, longitude)
         setIsLoading(false)
-        addMessage(MessageType.PARKING, result.message, result)
+        addMessage(MessageType.PARKING, result)
       },
-      (error) => {
-        setIsLoading(false)
+      async (error) => {
         setLocationError(error.message)
-        let errorMessage = '❌ Unable to get your location. '
-        
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage += 'Please allow location access and try again.'
-            break
-          case error.POSITION_UNAVAILABLE:
-            errorMessage += 'Location information is unavailable.'
-            break
-          case error.TIMEOUT:
-            break
-          default:
-            errorMessage += 'An unknown error occurred.'
-            break
-        }
+        let errorMessage = '❌ Unable to get your location. Using hardcoded location instead.'
         
         addMessage('bot', errorMessage)
+        
+        // Fall back to hardcoded location
+        const hardcodedLat = 47.669253
+        const hardcodedLng = -122.311622
+        addMessage('user', `📍 Using fallback location: ${hardcodedLat}, ${hardcodedLng}`)
+        
+        const result = await checkParkingByLocation(hardcodedLat, hardcodedLng)
+        setIsLoading(false)
+        addMessage(MessageType.PARKING, result)
       },
       {
         enableHighAccuracy: true,
@@ -266,91 +278,44 @@ const ParkingChatApp = () => {
     return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 
-  const handleAcceptTerms = () => {
-    localStorage.setItem('caniparkhere-terms-accepted', 'true')
-    setHasAcceptedTerms(true)
-  }
-
-  const handleDeclineTerms = () => {
-    setShowAccessDenied(true)
-  }
 
   return (
-    <div className="flex flex-col h-screen max-w-md mx-auto bg-white shadow-lg">
-      {/* Terms and Disclaimer Modal */}
-      {!hasAcceptedTerms && !showAccessDenied && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="text-center mb-4">
-                <div className="text-4xl mb-2">🅿️</div>
-                <h2 className="text-xl font-bold text-gray-800">Terms & Disclaimer</h2>
-              </div>
-              
-              <div className="text-sm text-gray-700 leading-relaxed mb-6">
-                <p className="font-semibold mb-3">Disclaimer:</p>
-                <p>
-                  CanIParkHere uses AI to help interpret parking signs but may be inaccurate. 
-                  This is not legal advice. You're responsible for following local parking rules. 
-                  Use the app at your own risk—we aren't liable for tickets or fines.
-                </p>
-                <p className="mt-3">
-                  By using this app, you agree to these terms.
-                </p>
-              </div>
-              
-              <div className="flex gap-3">
-                <button
-                  onClick={handleDeclineTerms}
-                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg py-3 px-4 font-medium transition-colors"
-                >
-                  Disagree
-                </button>
-                <button
-                  onClick={handleAcceptTerms}
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-3 px-4 font-medium transition-colors"
-                >
-                  I Agree
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Access Denied Screen */}
-      {showAccessDenied && (
-        <div className="fixed inset-0 bg-gray-100 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 text-center shadow-lg">
-            <div className="text-6xl mb-4">🚫</div>
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Access Denied</h2>
-            <p className="text-gray-600 mb-6">
-              You must agree to the terms and conditions to use CanIParkHere.
-            </p>
-            <button
-              onClick={() => {
-                setShowAccessDenied(false)
-                setHasAcceptedTerms(false)
-              }}
-              className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-2 px-6 font-medium transition-colors"
-            >
-              Go Back
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="flex flex-col h-screen max-w-md mx-auto bg-white dark:bg-gray-900 shadow-lg">
 
       {/* Header */}
-      <div className="bg-blue-600 text-white p-4 flex items-center gap-2">
-        <div className="text-2xl">🅿️</div>
-        <div>
-          <h1 className="font-bold text-lg">CanIParkHere</h1>
-          <p className="text-blue-100 text-sm">Parking Assistant</p>
+      <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="text-2xl">🅿️</div>
+          <div>
+            <h1 className="font-bold text-lg">CanIParkHere</h1>
+            <p className="text-blue-100 text-sm">Parking Assistant</p>
+          </div>
+        </div>
+        
+        {/* Menu Button */}
+        <div className="flex items-center gap-2">
+          {currentUser ? (
+            <button
+              onClick={() => setShowSidebar(true)}
+              className="p-2 hover:bg-blue-700 rounded-lg transition-colors"
+              title="Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="flex items-center gap-1 bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded-lg transition-colors text-sm"
+            >
+              <User className="w-4 h-4" />
+              Sign In
+            </button>
+          )}
         </div>
       </div>
 
       {/* Messages. It renders differently based on the message type: followup, parking, user, error. */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white dark:bg-gray-900">
         {messages.map((message) => {
           // Debug logging
           if (message.data?.imageData) {
@@ -365,7 +330,7 @@ const ParkingChatApp = () => {
               className={`max-w-[80%] rounded-lg px-4 py-2 ${
                 message.type === 'user'
                   ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-800'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
               }`}
             >
               {message.type === 'user' && (
@@ -384,6 +349,7 @@ const ParkingChatApp = () => {
 
               {message.type === 'parking' && (
                 <div>
+                  {message.data?.message || 'No message provided'}
                   {message.data?.reason || 'Parking analysis complete'}
                 </div>
               )}
@@ -493,7 +459,7 @@ const ParkingChatApp = () => {
         
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-gray-200 text-gray-800 rounded-lg px-4 py-2 flex items-center gap-2">
+            <div className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg px-4 py-2 flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-sm">Analyzing...</span>
             </div>
@@ -504,7 +470,7 @@ const ParkingChatApp = () => {
       </div>
 
       {/* Input Area */}
-      <div className="border-t bg-gray-50 p-4">
+      <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4">
         <div className="flex gap-2 mb-3">
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -534,7 +500,7 @@ const ParkingChatApp = () => {
                 type="text"
                 placeholder="Ask a follow-up question about the parking..."
                 disabled={isLoading}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 text-black"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700 text-black dark:text-white bg-white dark:bg-gray-700"
               />
               <button
                 type="submit"
@@ -557,12 +523,30 @@ const ParkingChatApp = () => {
           className="hidden"
         />
         
-        <div className="text-xs text-gray-500 text-center">
-          Choose &quot;Take Photo&quot; to capture a parking sign or &quot;Use Location&quot; to check local parking rules
-          {currentSessionId && <br />}
-          {currentSessionId && 'Ask follow-up questions about the parking analysis above'}
+        <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+          {currentUser ? (
+            <>
+              Choose &quot;Take Photo&quot; to capture a parking sign or &quot;Use Location&quot; to check local parking rules
+              {currentSessionId && <br />}
+              {currentSessionId && 'Ask follow-up questions about the parking analysis above'}
+            </>
+          ) : (
+            'Sign in to start analyzing parking signs and checking local rules'
+          )}
         </div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
+
+      {/* Sidebar */}
+      <Sidebar 
+        isOpen={showSidebar} 
+        onClose={() => setShowSidebar(false)} 
+      />
     </div>
   )
 }

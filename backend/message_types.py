@@ -22,6 +22,7 @@ class ParkingCheckResponse(BaseModel):
     processing_method: str = Field(..., description="Method used to process the request")
 
 
+# TODO: Fix this.... 
 class LocationCheckResponse(BaseModel):
     """Response from location-based parking check"""
     canPark: bool = Field(..., description="Whether parking is allowed at this location")
