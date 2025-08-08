@@ -1,56 +1,40 @@
+// /contexts/ThemeContext.js
 'use client'
-
 import { createContext, useContext, useEffect, useState } from 'react'
 
 const ThemeContext = createContext()
 
-export function useTheme() {
-  const context = useContext(ThemeContext)
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider')
-  }
-  return context
-}
-
 export function ThemeProvider({ children }) {
   const [isDarkMode, setIsDarkMode] = useState(false)
 
+  // Load theme from localStorage or system preference
   useEffect(() => {
-    // Check localStorage for saved theme preference
-    const savedTheme = localStorage.getItem('caniparkhere-theme')
-    if (savedTheme === 'dark') {
-      setIsDarkMode(true)
-      document.documentElement.classList.add('dark')
-    } else if (savedTheme === 'light') {
-      setIsDarkMode(false)
-      document.documentElement.classList.remove('dark')
+    const savedTheme = localStorage.getItem('theme')
+    if (savedTheme) {
+      const dark = savedTheme === 'dark'
+      setIsDarkMode(dark)
+      document.documentElement.classList.toggle('dark', dark)
+    } else {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      setIsDarkMode(prefersDark)
+      document.documentElement.classList.toggle('dark', prefersDark)
     }
   }, [])
 
   const toggleDarkMode = () => {
-    console.log('toggleDarkMode called, current isDarkMode:', isDarkMode)
-    const newDarkMode = !isDarkMode
-    setIsDarkMode(newDarkMode)
-    
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('caniparkhere-theme', 'dark')
-      console.log('Added dark class')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('caniparkhere-theme', 'light')
-      console.log('Removed dark class')
-    }
-  }
-
-  const value = {
-    isDarkMode,
-    toggleDarkMode
+    const newMode = !isDarkMode
+    setIsDarkMode(newMode)
+    localStorage.setItem('theme', newMode ? 'dark' : 'light')
+    document.documentElement.classList.toggle('dark', newMode)
   }
 
   return (
-    <ThemeContext.Provider value={value}>
+    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
       {children}
     </ThemeContext.Provider>
   )
+}
+
+export function useTheme() {
+  return useContext(ThemeContext)
 }

@@ -36,6 +36,16 @@ export const apiClient = {
     return response.json(); // Returns ParkingCheckResponse type
   },
 
+  async querySeattleParking(lat, length, radiusMeters=100) {
+    const url = `/api/seattle-parking?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&radius=${encodeURIComponent(radiusMeters)}`
+    const r = await fetch(url)
+    if (!r.ok) {
+      const text = await r.text()
+      throw new Error(`API failed: ${r.status} ${text}`)
+    }
+    return r.json()
+  },
+
   /**
    * Check parking rules by location coordinates
    * @param {number} latitude - Latitude coordinate
